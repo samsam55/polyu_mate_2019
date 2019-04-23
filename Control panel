@@ -18,7 +18,15 @@ const int VALVE[ VALVESIZE ] = {   32   ,      30 };
 const int ARM[ ARMOUTSIZE ][ ARMINSIZE ] = {  { 51,  53 }, { 47,  49 },   {43, 45},  { 37, 39  },   {35, 29},  {33, 23},  {31, 23}}; //{ 42,  44 }, { 50,  52 },  {36, 38},  { 48, 46  },   {28, 34},  {32, 30},  {34, 28}
 // Bitstream memory.
 //                      Cam1 Cam2 Cam3 Cam4 Cam5 Cam6 Cam7 Cam8
-byte cam[ CAMSIZE ] = {    0,   0,   0,   0,   0,   0,   0,   0 }; 
+byte cam[ CAMSIZE ] = {    0,   0,   0,   0,   0,   0,   0,   0 }; // 0s' will be changed to [0,180].
+//                          Cylinder Gripper1 Gripper2
+byte valve[ VALVESIZE ] = {        0,       0 };          // 0s' will be changed to [0,1].
+//                         Arm1 Arm2 Arm3 Arm4
+byte arm[ ARMOUTSIZE ] = {    0,   0,   0 , 0,0,0,0};                   // arm1-4 0s' will be changed to [0,2].
+const byte CAMUPDATEMARGIN = 5;
+const int UPDATECAMIDLECYCLES = 5;
+int updateCamIdle = UPDATECAMIDLECYCLES;
+bool isUpdatedCam = false;
 bool isUpdatedValve = false;
 bool isUpdatedArm = false;
 
@@ -27,15 +35,7 @@ void setup()
   // Cam.
   for ( int camIdx = 0; camIdx < CAMSIZE; ++camIdx )
   {
-    pinMode( CAM[ camIdx ], INPUT );// 0s' will be changed to [0,180].
-//                          Cylinder Gripper1 Gripper2
-byte valve[ VALVESIZE ] = {        0,       0 };          // 0s' will be changed to [0,1].
-//                         Arm1 Arm2 Arm3 Arm4
-byte arm[ ARMOUTSIZE ] = {    0,   0,   0 , 0};                   // arm1-4 0s' will be changed to [0,2].
-const byte CAMUPDATEMARGIN = 5;
-const int UPDATECAMIDLECYCLES = 5;
-int updateCamIdle = UPDATECAMIDLECYCLES;
-bool isUpdatedCam = false;
+    pinMode( CAM[ camIdx ], INPUT );
   }
 
   // Valve.
@@ -139,12 +139,6 @@ void loop()
     Serial.write( byte( 0xD1 ) );
     Serial.write( arm, ARMOUTSIZE );
     //Serial.write( arm, 3 );
-
-//    Serial.print( (byte) ( 0xD1 ), HEX); //arm
-//    Serial.print(' ');
-//    for(int i=0;i<7;i++)Serial.print(arm[i], HEX);
-//    Serial.print('\n');
-//    Serial.write( arm, 3 );
   }
 
   delay( DELAYLOOPTIME );
@@ -179,4 +173,3 @@ void loop()
     }
   */
 }
-
