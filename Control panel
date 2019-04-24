@@ -6,8 +6,10 @@ const int DELAYLOOPTIME = 20;
 // Pins' number arrays' size.
 const int CAMSIZE = 8;
 const int VALVESIZE = 2;
-const int ARMOUTSIZE = 7;
-const int ARMINSIZE = 2;
+const int BUTTONSIZE = 7;
+const int ARMSIZE = 4;
+const int TASK2SIZE = 3;
+const int BUTTON_STATE = 2;
 
 // Pins' number.
 //                           Cam1 Cam2 Cam3 Cam4 Cam5 Cam6 Cam7 Cam8
@@ -15,20 +17,23 @@ const int CAM[ CAMSIZE ] = {   A1,  A3,  A6,  A0,  A2,  A5,  A4,  A7 };
 //                               Gripper1 Cylinder Gripper2
 const int VALVE[ VALVESIZE ] = {   32   ,      30 };
 //                                             Arm1 UP DOWN   Arm2 UP DOWN   Arm3 UP DOWN Arm4 UP DOWN
-const int ARM[ ARMOUTSIZE ][ ARMINSIZE ] = {  { 51,  53 }, { 47,  49 },   {43, 45},  { 37, 39  },   {35, 29},  {33, 23},  {31, 23}}; //{ 42,  44 }, { 50,  52 },  {36, 38},  { 48, 46  },   {28, 34},  {32, 30},  {34, 28}
+const int BUTTON[ BUTTONSIZE ][ BUTTON_STATE ] = {  { 51,  53 }, { 47,  49 },   {43, 45}, {31, 23}, { 37, 39  },   {35, 29},  {33, 23}}; //{ 42,  44 }, { 50,  52 },  {36, 38},  { 48, 46  },   {28, 34},  {32, 30},  {34, 28}
 // Bitstream memory.
 //                      Cam1 Cam2 Cam3 Cam4 Cam5 Cam6 Cam7 Cam8
 byte cam[ CAMSIZE ] = {    0,   0,   0,   0,   0,   0,   0,   0 }; // 0s' will be changed to [0,180].
 //                          Cylinder Gripper1 Gripper2
 byte valve[ VALVESIZE ] = {        0,       0 };          // 0s' will be changed to [0,1].
 //                         Arm1 Arm2 Arm3 Arm4
-byte arm[ ARMOUTSIZE ] = {    0,   0,   0 , 0,0,0,0};                   // arm1-4 0s' will be changed to [0,2].
+byte arm[ ARMSIZE ] = {    0,   0,   0, 0};               // arm1-4 0s' will be changed to [0,2].
+//
+byte task2[TASK2SIZE] = {0, 0, 0};
 const byte CAMUPDATEMARGIN = 5;
 const int UPDATECAMIDLECYCLES = 5;
 int updateCamIdle = UPDATECAMIDLECYCLES;
 bool isUpdatedCam = false;
 bool isUpdatedValve = false;
 bool isUpdatedArm = false;
+bool isUpdatedTask2 = false;
 
 void setup()
 {
@@ -45,11 +50,11 @@ void setup()
   }
 
   // Arm.
-  for ( int armOutIdx = 0; armOutIdx < ARMOUTSIZE; ++armOutIdx )
+  for ( int armOutIdx = 0; armOutIdx < BUTTONSIZE; ++armOutIdx )
   {
-    for ( int armInIdx = 0; armInIdx < ARMINSIZE; ++armInIdx )
+    for ( int armInIdx = 0; armInIdx < BUTTON_STATE; ++armInIdx )
     {
-      pinMode( ARM[ armOutIdx ][ armInIdx ], INPUT );
+      pinMode( BUTTON[ armOutIdx ][ armInIdx ], INPUT );
     }
   }
 
@@ -91,20 +96,30 @@ void loop()
 
   // Arm.
   isUpdatedArm = false;
-  for ( int armOutIdx = 0; armOutIdx < ARMOUTSIZE; ++armOutIdx )
+  isUpdatedTask2 = false;
+  for ( int armOutIdx = 0; armOutIdx < BUTTONSIZE; ++armOutIdx )
   {
-    bool armInVal[ ARMINSIZE ] = { false, false };
-    for ( int armInIdx = 0; armInIdx < ARMINSIZE; ++armInIdx )
+    bool armInVal[ BUTTON_STATE ] = { false, false };
+    for ( int armInIdx = 0; armInIdx < BUTTON_STATE; ++armInIdx )
     {
-      armInVal[ armInIdx ] = ( digitalRead( ARM[ armOutIdx ][ armInIdx ] ) == HIGH );
+      armInVal[ armInIdx ] = ( digitalRead( BUTTON[ armOutIdx ][ armInIdx ] ) == HIGH );
     }
     byte val = ( ( armInVal[ 0 ] ) ? ( byte ) ( 1 ) :
                  ( ( armInVal[ 1 ] ) ? ( byte ) ( 2 ) :
                    ( byte ) ( 0 ) ) );
-    if ( arm[ armOutIdx ] != val )
-    {
-      isUpdatedArm = true;
-      arm[ armOutIdx ] = val;
+    if ( armOutIdx > 3) {
+      if ( task2[ armOutIdx - 4] != val )
+      {
+        isUpdatedTask2 = true;
+        task2[ armOutIdx - 4 ] = val;
+      }
+    }
+    else {
+      if ( arm[ armOutIdx ] != val )
+      {
+        isUpdatedArm = true;
+        arm[ armOutIdx ] = val;
+      }
     }
   }
 
@@ -137,7 +152,21 @@ void loop()
   {
     // Serial write of arm.
     Serial.write( byte( 0xD1 ) );
-    Serial.write( arm, ARMOUTSIZE );
+    Serial.write( arm, ARMSIZE );
+    //    Serial.print((byte) (0xD1), HEX);
+    //    for (int i = 0; i < ARMSIZE; i++)Serial.print(arm[i], HEX);
+    //    Serial.print('\n');
+    //Serial.write( arm, 3 );
+  }
+
+  if ( isUpdatedTask2 )
+  {
+    // Serial write of arm.
+    Serial.write( byte( 0xD2 ) );
+    Serial.write( task2, TASK2SIZE );
+    //    Serial.print((byte) (0xD2), HEX);
+    //    for (int i = 0; i < TASK2SIZE; i++)Serial.print(task2[i], HEX);
+    //    Serial.print('\n');
     //Serial.write( arm, 3 );
   }
 
