@@ -50,7 +50,7 @@ void motor (int i, byte s) {
 
   else if (s == 1) {
     digitalWrite(pin_motor[i][1], LOW);
-    digitalWrite(pin_motor[i][0], HIGH);
+    digitalWrite(pin_motor[i][0], HIGH); 
   }
 
   else if (s == 2) {
@@ -94,11 +94,11 @@ void loop() {
             if (i == 0 ) {
               stepper(i, temp_s_m[i]);
             }
-            else if (i == 1) {
-              motor(i - 1, temp_s_m[i]);
+            else if (i == 1) { 
+              motor(3, temp_s_m[i]);
             }
             else if (i == 3) {
-              motor(i - 3 , temp_s_m[i]);
+              motor(1 , temp_s_m[i]);
             }
           }
         }
