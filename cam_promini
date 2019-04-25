@@ -1,0 +1,122 @@
+//mate 2019
+//rov cam
+
+//cam
+const int campin[8] = {2, 3, 4, 5, 6, 7, 10, 11};
+const int serial_pin[2] = {8, 9};
+const int cannon_pin[2] = {12, 13};
+const int albert_grip_servo_pin = A0;
+const int albert_fish_pin = A1;
+const int spare = A2;
+const int laser_pin = A3;
+int tem = 0;
+int ph = 0;
+int sensorloop = 0;
+//-----------------------------
+// Servo
+//-----------------------------
+#include <ServoTimer2.h>
+#include <AltSoftSerial.h>
+AltSoftSerial sensor;
+ServoTimer2 Scam[8];
+ServoTimer2 cannon[2];
+ServoTimer2 albert_grip;
+ServoTimer2 albert_fish;
+byte cam_in[8] = {90, 90, 90, 90, 90, 90, 90, 90};
+byte task2[3] = {0, 0, 0};
+//-----------------------------
+
+void Sensor_function() {
+  int a[9];
+  delay(100);
+  int b;
+  b = sensor.read();
+  if (b == 247) {
+    for (int i = 0; i < 8; i++) {
+      a[i] = sensor.read();
+      delay(5);
+    }
+    tem = a[2] * 256 + a[3];
+    ph = a[4] * 256 + a[5];
+  }
+}
+
+void setup() {
+  // put your setup code here, to run once:
+  //serial
+  Serial.begin(115200);
+  sensor.begin(9600);
+  for (int i = 0; i < 8; i++)      //camera servo
+    Scam[i].attach(campin[i]);
+  cannon[0].attach(cannon_pin[0]); //cannon servo
+  cannon[1].attach(cannon_pin[1]); //cannon servo
+  albert_grip.attach(albert_grip_servo_pin);
+  albert_fish.attach(albert_fish_pin);
+}
+
+void loop() {
+  Sensor_function();
+  // put your main code here, to run repeatedly:
+  if (Serial.available()) {
+    byte c = Serial.read(); // get it
+    //Serial.print(c); //debug
+    switch (c) {
+      case 0xC1:
+        Serial.readBytes(cam_in, 8);
+        for (int i = 0; i < 8; i++)
+          Scam[i].write(cam_in[i]);
+        break;
+      case 0xD1:
+        byte fake[4];
+        Serial.readBytes(fake, 4);
+        break;
+      case 0xD2:
+        const int data_size = 4;
+        byte receive_data[data_size];
+        Serial.readBytes(receive_data, data_size);
+        int counter = 0;
+        for (int i = 0; i < data_size; i++) {
+          if (receive_data[i] != 0 && counter == 0) //for electricity protection
+            counter++;
+          else receive_data[i] = 0;
+          if (receive_data[i] != task2[i]) {
+            task2[i] = receive_data[i];
+            if (i == 0) {
+              if (task2[i] == (byte) (1)) albert_grip.write(180);
+              else albert_grip.write(0);
+            } //servo-direction
+            else if (i == 1) {
+              if (task2[i] == (byte) (1)) albert_fish.write(180);
+              else albert_fish.write(0);
+            } //fish
+            else if (i == 2) {
+              if (task2[i] == (byte) (1)) digitalWrite(laser_pin, true);
+              else digitalWrite(laser_pin, false);
+            } //laser
+            else if (i == 3) {
+              if (task2[i] == (byte) (1)) {
+                cannon[0].write(180);
+                cannon[1].write(180);
+              }
+              else {
+                cannon[0].write(0);
+                cannon[1].write(0);
+              }
+            }//cannon
+          }
+        }
+        break;
+      case 0xF1:
+
+        Serial.write(0xF2);
+        Serial.write(0xC1);
+        break;
+    }
+  }
+  sensorloop++;
+  if (sensorloop >= 100){
+    sensorloop = 0;
+    Serial.print('pH: ' + ph);
+    Serial.print('Temp: ' + tem);
+    }
+}
