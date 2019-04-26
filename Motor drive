@@ -1,5 +1,5 @@
-//MATE2018
-//10/6/2018
+    
+//MATE2019
 
 #include "A4988.h"
 
@@ -98,7 +98,7 @@ void loop() {
               motor(3, temp_s_m[i]);
             }
             else if (i == 3) {
-              motor(1 , temp_s_m[i]);
+              motor(2 , temp_s_m[i]);
             }
           }
         }
