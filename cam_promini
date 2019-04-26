@@ -15,18 +15,19 @@ int sensorloop = 0;
 //-----------------------------
 // Servo
 //-----------------------------
-#include <ServoTimer2.h>
-#include <AltSoftSerial.h>
-AltSoftSerial sensor;
-ServoTimer2 Scam[8];
-ServoTimer2 cannon[2];
-ServoTimer2 albert_grip;
-ServoTimer2 albert_fish;
+#include <Servo.h>
+#include <SoftwareSerial.h>
+SoftwareSerial sensor (8, 9);
+Servo Scam[8];
+Servo cannon[2];
+Servo albert_grip;
+Servo albert_fish;
 byte cam_in[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 byte task2[4] = {0, 0, 0, 0};
 //-----------------------------
 
 void Sensor_function() {
+  sensor.listen();
   int a[9];
   delay(100);
   int b;
@@ -39,6 +40,7 @@ void Sensor_function() {
     tem = a[2] * 256 + a[3];
     ph = a[4] * 256 + a[5];
   }
+  sensor.stopListening();
 }
 
 void setup() {
@@ -46,7 +48,6 @@ void setup() {
   //serial
   Serial.begin(115200);
   sensor.begin(9600);
-  pinMode(A0, OUTPUT);
   for (int i = 0; i < 8; i++)      //camera servo
     Scam[i].attach(campin[i]);
   cannon[0].attach(cannon_pin[0]); //cannon servo
@@ -65,10 +66,7 @@ void loop() {
       case 0xC1:
         Serial.readBytes(cam_in, 8);
         for (int i = 0; i < 8; i++) {
-          int y;
-          y = (int) cam_in[i];
-          y = map(y, 0, 180, 750, 2250);
-          Scam[i].write(y);
+          Scam[i].write(cam_in[i]);
         }
         break;
       case 0xD1:
@@ -88,12 +86,12 @@ void loop() {
             task2[i] = receive_data[i];
             if (i == 0) {
               Serial.write(0xF2);
-              if (task2[i] == (byte) (1)) albert_grip.write(2250);
-              else albert_grip.write(750);
+              if (task2[i] == (byte) (1)) albert_grip.write(180);
+              else albert_grip.write(0);
             } //servo-direction
             else if (i == 1) {
-              if (task2[i] == (byte) (1)) albert_fish.write(2250);
-              else albert_fish.write(750);
+              if (task2[i] == (byte) (1)) albert_fish.write(180);
+              else albert_fish.write(0);
             } //fish
             else if (i == 2) {
               if (task2[i] == (byte) (1)) digitalWrite(laser_pin, true);
@@ -101,12 +99,12 @@ void loop() {
             } //laser
             else if (i == 3) {
               if (task2[i] == (byte) (1)) {
-                cannon[0].write(2250);
-                cannon[1].write(2250);
+                cannon[0].write(180);
+                cannon[1].write(180);
               }
               else {
-                cannon[0].write(750);
-                cannon[1].write(750);
+                cannon[0].write(0);
+                cannon[1].write(0);
               }
             }//cannon
           }
@@ -119,12 +117,13 @@ void loop() {
         break;
     }
   }
+
   sensorloop++;
-  /*
-    if (sensorloop >= 100) {
+
+  if (sensorloop >= 1000) {
     sensorloop = 0;
     Serial.print('pH: ' + ph);
     Serial.print('Temp: ' + tem);
-    }
-  */
+  }
+
 }
