@@ -22,8 +22,8 @@ ServoTimer2 Scam[8];
 ServoTimer2 cannon[2];
 ServoTimer2 albert_grip;
 ServoTimer2 albert_fish;
-byte cam_in[8] = {90, 90, 90, 90, 90, 90, 90, 90};
-byte task2[3] = {0, 0, 0};
+byte cam_in[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+byte task2[4] = {0, 0, 0, 0};
 //-----------------------------
 
 void Sensor_function() {
@@ -46,6 +46,7 @@ void setup() {
   //serial
   Serial.begin(115200);
   sensor.begin(9600);
+  pinMode(A0, OUTPUT);
   for (int i = 0; i < 8; i++)      //camera servo
     Scam[i].attach(campin[i]);
   cannon[0].attach(cannon_pin[0]); //cannon servo
@@ -63,31 +64,36 @@ void loop() {
     switch (c) {
       case 0xC1:
         Serial.readBytes(cam_in, 8);
-        for (int i = 0; i < 8; i++)
-          Scam[i].write(cam_in[i]);
+        for (int i = 0; i < 8; i++) {
+          int y;
+          y = (int) cam_in[i];
+          y = map(y, 0, 180, 750, 2250);
+          Scam[i].write(y);
+        }
         break;
       case 0xD1:
         byte fake[4];
         Serial.readBytes(fake, 4);
         break;
       case 0xD2:
-        const int data_size = 4;
-        byte receive_data[data_size];
-        Serial.readBytes(receive_data, data_size);
-        int counter = 0;
-        for (int i = 0; i < data_size; i++) {
+        byte receive_data[4];
+        Serial.readBytes(receive_data, 4);
+        int counter;
+        counter = 0;
+        for (int i = 0; i < 4; i++) {
           if (receive_data[i] != 0 && counter == 0) //for electricity protection
             counter++;
           else receive_data[i] = 0;
           if (receive_data[i] != task2[i]) {
             task2[i] = receive_data[i];
             if (i == 0) {
-              if (task2[i] == (byte) (1)) albert_grip.write(180);
-              else albert_grip.write(0);
+              Serial.write(0xF2);
+              if (task2[i] == (byte) (1)) albert_grip.write(2250);
+              else albert_grip.write(750);
             } //servo-direction
             else if (i == 1) {
-              if (task2[i] == (byte) (1)) albert_fish.write(180);
-              else albert_fish.write(0);
+              if (task2[i] == (byte) (1)) albert_fish.write(2250);
+              else albert_fish.write(750);
             } //fish
             else if (i == 2) {
               if (task2[i] == (byte) (1)) digitalWrite(laser_pin, true);
@@ -95,12 +101,12 @@ void loop() {
             } //laser
             else if (i == 3) {
               if (task2[i] == (byte) (1)) {
-                cannon[0].write(180);
-                cannon[1].write(180);
+                cannon[0].write(2250);
+                cannon[1].write(2250);
               }
               else {
-                cannon[0].write(0);
-                cannon[1].write(0);
+                cannon[0].write(750);
+                cannon[1].write(750);
               }
             }//cannon
           }
@@ -114,9 +120,11 @@ void loop() {
     }
   }
   sensorloop++;
-  if (sensorloop >= 100){
+  /*
+    if (sensorloop >= 100) {
     sensorloop = 0;
     Serial.print('pH: ' + ph);
     Serial.print('Temp: ' + tem);
     }
+  */
 }
