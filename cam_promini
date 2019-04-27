@@ -79,13 +79,9 @@ void loop() {
         int counter;
         counter = 0;
         for (int i = 0; i < 4; i++) {
-          if (receive_data[i] != 0 && counter == 0) //for electricity protection
-            counter++;
-          else receive_data[i] = 0;
           if (receive_data[i] != task2[i]) {
             task2[i] = receive_data[i];
             if (i == 0) {
-              Serial.write(0xF2);
               if (task2[i] == (byte) (1)) albert_grip.write(180);
               else albert_grip.write(0);
             } //servo-direction
@@ -100,13 +96,14 @@ void loop() {
             else if (i == 3) {
               if (task2[i] == (byte) (1)) {
                 cannon[0].write(180);
-                cannon[1].write(180);
+                cannon[1].write(0);
               }
               else {
                 cannon[0].write(0);
-                cannon[1].write(0);
+                cannon[1].write(180); 
               }
             }//cannon
+            
           }
         }
         break;
